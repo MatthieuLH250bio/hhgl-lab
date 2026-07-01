@@ -1,5 +1,4 @@
 [build]
-target-dir = "/home/matthieu/hhgl-lab-main/client/src-tauri/target"
 jobs = 1
 
 [profile.release]
