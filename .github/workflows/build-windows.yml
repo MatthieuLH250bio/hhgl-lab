@@ -1,0 +1,89 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: client/src-tauri
+
+      - name: Install Tauri dependencies (npm)
+        working-directory: client
+        run: npm ci
+
+      - name: Install Python dependencies
+        working-directory: server
+        run: |
+          python -m venv .venv
+          .venv\Scripts\pip install -r requirements.txt pyinstaller psutil
+
+      - name: Build Tauri client
+        working-directory: client
+        run: npm run tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+
+      - name: Build server launcher (PyInstaller)
+        working-directory: server
+        run: |
+          .venv\Scripts\pyinstaller.exe launcher\launcher.spec --distpath launcher\dist --workpath launcher\build_tmp --noconfirm
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Update CLIENT_SETUP path in installer.nsi
+        working-directory: build
+        shell: pwsh
+        run: |
+          $clientExe = Get-ChildItem "..\client\src-tauri\target\release\bundle\nsis\*setup*.exe" |
+                       Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          $nsiContent = Get-Content "installer.nsi" -Raw
+          $newSetupPath = "..\client\src-tauri\target\release\bundle\nsis\$($clientExe.Name)"
+          $nsiContent = $nsiContent -replace '(?<=!define CLIENT_SETUP\s+")[^"]+(?=")', $newSetupPath
+          [System.IO.File]::WriteAllText("$PWD\installer.nsi", $nsiContent, [System.Text.UTF8Encoding]::new($false))
+          Write-Host "Setup: $newSetupPath"
+
+      - name: Build NSIS installer
+        working-directory: build
+        run: |
+          & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: HHGL-Setup-Windows
+          path: build/HHGL-Setup.exe
+          retention-days: 30
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/HHGL-Setup.exe
+          name: HHGL Lab ${{ github.ref_name }}

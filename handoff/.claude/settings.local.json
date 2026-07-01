@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Restart-Service \"postgresql-x64-18\" -Force)",
+      "PowerShell(& \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -h 127.0.0.1 -W -c \"\\\\l\")",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\mattleha\\\\hhgl-lab\\\\client\" | Where-Object { $_.Name -ne \"node_modules\" })",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\mattleha\\\\hhgl-lab\\\\client\\\\src\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object Name)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(node -e \"const t = require\\('c:/Users/mattleha/hhgl-lab/client/node_modules/@tiptap/extension-table/dist/index.js'\\); console.log\\(Object.keys\\(t\\)\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\mattleha\\\\hhgl-lab\\\\server\" -Name \"requirements.txt\" -ErrorAction SilentlyContinue)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\mattleha\\\\hhgl-lab\\\\server\\\\app\\\\api\" -Recurse -Filter \"*.ts\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\mattleha\\\\hhgl-lab\\\\client\\\\src\\\\routes\\\\Notebook\\\\\" -File | Select-Object Name)",
+      "Bash(find \"c:\\\\Users\\\\mattleha\\\\hhgl-lab\\\\client\\\\src\" -type f -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.css\" | head -50)",
+      "Read(//c/Users/mattleha/hhgl-lab/client/src/**)"
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+/* =========================================================
+   Tokens extraits du mockup HHGL Lab — direction D2 (Benchling-like)
+   À adapter en Tailwind v4 (`@import "tailwindcss"` puis `@theme inline`)
+   ou à utiliser tel quel comme variables CSS dans index.css
+   ========================================================= */
+
+:root {
+  /* Light (D2) */
+  --bg:           #f6f5f1;
+  --surface:      #fffdf8;
+  --surface-2:    #efece4;
+  --border:       #e3dfd3;
+  --border-strong:#cdc7b6;
+
+  --fg:           #1f1d18;
+  --fg-muted:     #6b6657;
+  --fg-subtle:    #9c9684;
+
+  --primary:      #1e497a;
+  --primary-soft: #e4ebf3;
+  --accent:       #0d8a7a;
+  --success:      #4f8a3a;
+  --warning:      #b76e1f;
+  --danger:       #b03a2e;
+
+  --radius:       4px;
+
+  --font-sans:    "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+
+  color: var(--fg);
+  background: var(--bg);
+  font-family: var(--font-sans);
+}
+
+.dark {
+  --bg:           #14130f;
+  --surface:      #1c1b16;
+  --surface-2:    #25241e;
+  --border:       #2d2c25;
+  --border-strong:#3d3b32;
+
+  --fg:           #ebe7da;
+  --fg-muted:     #968f7c;
+  --fg-subtle:    #6a6555;
+
+  --primary:      #7eb1de;
+  --primary-soft: #1c2a3a;
+  --accent:       #4cc4b1;
+  --success:      #6fb359;
+  --warning:      #e4974b;
+  --danger:       #e57163;
+}
+
+/* utilitaires */
+.mono { font-family: var(--font-mono); }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* ---- Échelle ----
+   Espacements : 4 / 6 / 8 / 12 / 16 / 24 / 32
+   Radius      : 4 (cartes), 6 (boutons), 999 (badges)
+   Tailles UI  : labels uppercase 10–11 / body 12.5–13.5 / titres 15–18
+   Sidebar     : 240px étendue, 64px repliée
+*/

@@ -1,0 +1,27 @@
+# Python
+server/.venv/
+server/__pycache__/
+server/**/__pycache__/
+server/**/*.pyc
+server/uploads/
+server/launcher/dist/
+server/launcher/build_tmp/
+
+# Node
+client/node_modules/
+client/dist/
+
+# Rust / Tauri
+client/src-tauri/target/
+C:/cargo-target/
+
+# Environnement
+server/.env
+client/.env.local
+
+# Build
+build/HHGL-Setup.exe
+
+# OS
+.DS_Store
+Thumbs.db

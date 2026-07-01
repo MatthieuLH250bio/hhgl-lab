@@ -1,0 +1,25 @@
+{
+  "identifier": "default",
+  "description": "Capabilities par defaut - acces export Documents",
+  "windows": ["main"],
+  "permissions": [
+    "core:path:default",
+    "core:event:default",
+    "core:window:default",
+    "core:app:default",
+    "core:resources:default",
+    "core:menu:default",
+    "core:tray:default",
+    "opener:default",
+    "fs:allow-mkdir",
+    "fs:allow-write-text-file",
+    "fs:allow-read-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$DOCUMENT/export" },
+        { "path": "$DOCUMENT/export/**" }
+      ]
+    }
+  ]
+}
