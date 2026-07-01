@@ -22,6 +22,21 @@ _sdir = _server_dir()
 if str(_sdir) not in sys.path:
     sys.path.insert(0, str(_sdir))
 
+# ── Crée le .env par défaut si absent ────────────────────────────────────────
+def _ensure_env():
+    env_path = _sdir / ".env"
+    if not env_path.exists():
+        import secrets
+        env_path.write_text(
+            f"DATABASE_URL=postgresql+asyncpg://hhgl:hhgl@localhost/hhgl\n"
+            f"JWT_SECRET={secrets.token_hex(32)}\n"
+            f"JWT_ALGORITHM=HS256\n"
+            f"ACCESS_TOKEN_EXPIRE_MINUTES=1440\n",
+            encoding="utf-8",
+        )
+
+_ensure_env()
+
 # ── Imports serveur (disponibles après ajout au path) ────────────────────────
 try:
     import uvicorn
