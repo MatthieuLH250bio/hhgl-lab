@@ -2,9 +2,13 @@
 HHGL Server Launcher
 Lance uvicorn dans un thread interne — aucun Python externe requis.
 """
+import sys
+if sys.platform == "win32":
+    import asyncio
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 import logging
 import os
-import sys
 import threading
 import time
 from datetime import datetime
@@ -255,10 +259,6 @@ class ServerLauncher:
             self._log("uvicorn non disponible.", "err")
             return
 
-        if sys.platform == "win32":
-            import asyncio
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
         self._log("Démarrage du serveur…", "warn")
 
         # Installe le handler de log uvicorn
@@ -277,6 +277,7 @@ class ServerLauncher:
             host="0.0.0.0",
             port=8000,
             log_config=None,
+            loop="asyncio",
         )
         self._server = uvicorn.Server(cfg)
 
