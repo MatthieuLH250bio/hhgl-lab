@@ -255,6 +255,10 @@ class ServerLauncher:
             self._log("uvicorn non disponible.", "err")
             return
 
+        if sys.platform == "win32":
+            import asyncio
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
         self._log("Démarrage du serveur…", "warn")
 
         # Installe le handler de log uvicorn
