@@ -283,7 +283,14 @@ class ServerLauncher:
 
         def _run():
             try:
-                self._server.run()
+                if sys.platform == "win32":
+                    import asyncio
+                    loop = asyncio.SelectorEventLoop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(self._server.serve())
+                    loop.close()
+                else:
+                    self._server.run()
             except Exception as e:
                 self._log_safe(f"Erreur serveur : {e}", "err")
             finally:
