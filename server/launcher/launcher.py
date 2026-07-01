@@ -37,6 +37,19 @@ def _ensure_env():
 
 _ensure_env()
 
+# ── Migrations Alembic au premier démarrage ───────────────────────────────────
+def _run_migrations():
+    try:
+        from alembic.config import Config
+        from alembic import command
+        alembic_cfg = Config(str(_sdir / "alembic.ini"))
+        alembic_cfg.set_main_option("script_location", str(_sdir / "alembic"))
+        command.upgrade(alembic_cfg, "head")
+    except Exception as e:
+        print(f"[migrations] {e}")
+
+_run_migrations()
+
 # ── Imports serveur (disponibles après ajout au path) ────────────────────────
 try:
     import uvicorn
