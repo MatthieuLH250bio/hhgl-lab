@@ -50,22 +50,7 @@ Section "HHGL Lab" SEC_MAIN
   SetOutPath "${INSTALL_DIR}\server"
   File /r /x ".venv" /x "__pycache__" /x "*.pyc" /x "launcher" "${SERVER_DIR}\*"
 
-  ; 4. PostgreSQL — installation si absent
-  DetailPrint "Vérification de PostgreSQL…"
-  nsExec::ExecToStack 'sc query postgresql-x64-16'
-  Pop $0
-  ${If} $0 != 0
-    DetailPrint "Installation de PostgreSQL (winget)…"
-    nsExec::ExecToLog 'powershell -NonInteractive -Command "winget install -e --id PostgreSQL.PostgreSQL.16 --silent --accept-package-agreements --accept-source-agreements"'
-    Sleep 5000
-  ${EndIf}
-  DetailPrint "Démarrage du service PostgreSQL…"
-  nsExec::ExecToLog 'net start postgresql-x64-16'
-  Sleep 2000
-  DetailPrint "Création de la base de données HHGL…"
-  nsExec::ExecToLog 'powershell -NonInteractive -Command "& ''$env:PROGRAMFILES\PostgreSQL\16\bin\psql.exe'' -U postgres -c ''CREATE USER hhgl WITH PASSWORD ''''hhgl'''' CREATEDB;'' 2>$null; & ''$env:PROGRAMFILES\PostgreSQL\16\bin\psql.exe'' -U postgres -c ''CREATE DATABASE hhgl OWNER hhgl;'' 2>$null"'
-
-  ; 5. Raccourcis Bureau
+  ; 4. Raccourcis Bureau (installés avant PostgreSQL pour garantir leur création)
   CreateShortcut "$DESKTOP\HHGL Client.lnk" \
     "$PROGRAMFILES64\hhgl-lab\hhgl-lab.exe" "" "$PROGRAMFILES64\hhgl-lab\hhgl-lab.exe" 0
   CreateShortcut "$DESKTOP\HHGL Serveur.lnk" \
@@ -85,6 +70,20 @@ Section "HHGL Lab" SEC_MAIN
 
   ; 8. Désinstalleur
   WriteUninstaller "${INSTALL_DIR}\Uninstall.exe"
+
+  ; 9. PostgreSQL — installation si absent (en dernier pour ne pas bloquer le reste)
+  DetailPrint "Vérification de PostgreSQL…"
+  nsExec::ExecToStack 'sc query postgresql-x64-16'
+  Pop $0
+  ${If} $0 != 0
+    DetailPrint "Installation de PostgreSQL — merci de patienter (~2 min)…"
+    nsExec::ExecToLog 'powershell -NonInteractive -ExecutionPolicy Bypass -Command "winget install -e --id PostgreSQL.PostgreSQL.16 --silent --accept-package-agreements --accept-source-agreements --override \"--mode unattended --superpassword hhglpg2024 --servicename postgresql-16 --serverport 5432\""'
+  ${EndIf}
+  DetailPrint "Démarrage du service PostgreSQL…"
+  nsExec::ExecToLog 'net start postgresql-x64-16'
+  Sleep 3000
+  DetailPrint "Création de la base de données HHGL…"
+  nsExec::ExecToLog 'powershell -NonInteractive -ExecutionPolicy Bypass -Command "$env:PGPASSWORD=''hhglpg2024''; $psql=''$env:PROGRAMFILES\PostgreSQL\16\bin\psql.exe''; & $psql -U postgres -c ''CREATE USER hhgl WITH PASSWORD ''''hhgl'''' CREATEDB;''; & $psql -U postgres -c ''CREATE DATABASE hhgl OWNER hhgl;''"'
 
   ; 8. Entrée Ajout/Suppression de programmes
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\HHGLLab" \
