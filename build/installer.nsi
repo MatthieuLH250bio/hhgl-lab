@@ -14,6 +14,8 @@ Unicode True
 !define CLIENT_SETUP  "..\client\src-tauri\target\release\bundle\nsis\hhgl-lab_0.1.0_x64-setup.exe"
 !define SERVER_EXE    "..\server\launcher\dist\HHGL Serveur.exe"
 !define SERVER_DIR    "..\server"
+!define PG_SETUP      "postgresql-setup.exe"
+!define PG_PASSWORD   "hhglpg2024"
 
 Name          "${APP_NAME} ${APP_VERSION}"
 OutFile       "HHGL-Setup.exe"
@@ -71,19 +73,22 @@ Section "HHGL Lab" SEC_MAIN
   ; 8. Désinstalleur
   WriteUninstaller "${INSTALL_DIR}\Uninstall.exe"
 
-  ; 9. PostgreSQL — installation si absent (en dernier pour ne pas bloquer le reste)
+  ; 9. PostgreSQL — installation bundlée avec credentials connus
   DetailPrint "Vérification de PostgreSQL…"
   nsExec::ExecToStack 'sc query postgresql-x64-16'
   Pop $0
   ${If} $0 != 0
-    DetailPrint "Installation de PostgreSQL — merci de patienter (~2 min)…"
-    nsExec::ExecToLog 'powershell -NonInteractive -ExecutionPolicy Bypass -Command "winget install -e --id PostgreSQL.PostgreSQL.16 --silent --accept-package-agreements --accept-source-agreements --override \"--mode unattended --superpassword hhglpg2024 --servicename postgresql-16 --serverport 5432\""'
+    DetailPrint "Installation de PostgreSQL — merci de patienter (~3 min)…"
+    SetOutPath "${INSTALL_DIR}"
+    File "${PG_SETUP}"
+    ExecWait '"${INSTALL_DIR}\postgresql-setup.exe" --mode unattended --superpassword "${PG_PASSWORD}" --servicename "postgresql-16" --servicepassword "${PG_PASSWORD}" --serverport 5432 --prefix "$PROGRAMFILES64\PostgreSQL\16" --datadir "$PROGRAMFILES64\PostgreSQL\16\data"'
+    Delete "${INSTALL_DIR}\postgresql-setup.exe"
   ${EndIf}
   DetailPrint "Démarrage du service PostgreSQL…"
   nsExec::ExecToLog 'net start postgresql-x64-16'
   Sleep 3000
   DetailPrint "Création de la base de données HHGL…"
-  nsExec::ExecToLog 'powershell -NonInteractive -ExecutionPolicy Bypass -Command "$env:PGPASSWORD=''hhglpg2024''; $psql=''$env:PROGRAMFILES\PostgreSQL\16\bin\psql.exe''; & $psql -U postgres -c ''CREATE USER hhgl WITH PASSWORD ''''hhgl'''' CREATEDB;''; & $psql -U postgres -c ''CREATE DATABASE hhgl OWNER hhgl;''"'
+  nsExec::ExecToLog 'powershell -NonInteractive -ExecutionPolicy Bypass -Command "$env:PGPASSWORD=''${PG_PASSWORD}''; $psql=''$env:PROGRAMFILES\PostgreSQL\16\bin\psql.exe''; & $psql -U postgres -h 127.0.0.1 -c ''CREATE USER hhgl WITH PASSWORD ''''hhgl'''' CREATEDB;'' ; & $psql -U postgres -h 127.0.0.1 -c ''CREATE DATABASE hhgl OWNER hhgl;''"'
 
   ; 8. Entrée Ajout/Suppression de programmes
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\HHGLLab" \

@@ -57,6 +57,13 @@ jobs:
         run: |
           .venv\Scripts\pyinstaller.exe launcher\launcher.spec --distpath launcher\dist --workpath launcher\build_tmp --noconfirm
 
+      - name: Download PostgreSQL installer
+        shell: pwsh
+        run: |
+          $pgUrl = "https://get.enterprisedb.com/postgresql/postgresql-16.9-1-windows-x64.exe"
+          Invoke-WebRequest -Uri $pgUrl -OutFile "build\postgresql-setup.exe" -UseBasicParsing
+          Write-Host "PostgreSQL installer downloaded"
+
       - name: Install NSIS
         run: choco install nsis -y
 
