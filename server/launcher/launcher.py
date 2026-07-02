@@ -62,6 +62,23 @@ def _run_migrations():
 
 _run_migrations()
 
+# ── Crée le compte admin par défaut si absent ────────────────────────────────
+def _seed_admin():
+    try:
+        import asyncio
+        from seed_admin import seed
+        if sys.platform == "win32":
+            loop = asyncio.SelectorEventLoop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(seed())
+            loop.close()
+        else:
+            asyncio.run(seed())
+    except Exception as e:
+        print(f"[seed_admin] {e}")
+
+_seed_admin()
+
 # ── Imports serveur (disponibles après ajout au path) ────────────────────────
 try:
     import uvicorn
