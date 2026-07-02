@@ -117,6 +117,7 @@ class ServerLauncher:
             self._log(f"Répertoire serveur : {_sdir}", "info")
         self._tick()
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+        self._auto_detect_pg()
         self.root.mainloop()
 
     # ── UI ────────────────────────────────────────────────────────────────────
@@ -124,9 +125,9 @@ class ServerLauncher:
     def _build_ui(self):
         self.root = tk.Tk()
         self.root.title("HHGL — Serveur")
-        self.root.geometry("660x580")
+        self.root.geometry("660x640")
         self.root.resizable(True, True)
-        self.root.minsize(540, 480)
+        self.root.minsize(540, 540)
         self.root.configure(bg=BG)
 
         ico = Path(__file__).parent / "icon.ico"
@@ -141,6 +142,7 @@ class ServerLauncher:
         self._build_header()
         self._build_stats()
         self._build_buttons()
+        self._build_pg_config()
         self._build_logs()
 
     def _build_header(self):
@@ -232,6 +234,120 @@ class ServerLauncher:
         self.log_box.tag_config("err",  foreground="#f87171")
         self.log_box.tag_config("warn", foreground="#fbbf24")
         self.log_box.tag_config("info", foreground="#64748b")
+
+    # ── PostgreSQL config ─────────────────────────────────────────────────────
+
+    def _build_pg_config(self):
+        frm = tk.Frame(self.root, bg=SURFACE, pady=8)
+        frm.pack(fill="x", padx=14, pady=(0, 8))
+        tk.Label(frm, text="POSTGRESQL", bg=SURFACE, fg=FG_MUT,
+                 font=("Segoe UI", 8, "bold")).pack(side="left", padx=(10, 12))
+        tk.Label(frm, text="Port :", bg=SURFACE, fg=FG,
+                 font=("Segoe UI", 10)).pack(side="left")
+        self.pg_port_var = tk.StringVar(value="5432")
+        tk.Entry(frm, textvariable=self.pg_port_var, width=6,
+                 bg=BG, fg=FG, insertbackground=FG, relief="flat",
+                 font=("Segoe UI", 10)).pack(side="left", padx=(4, 10))
+        tk.Button(frm, text="Détecter", command=self._on_detect_pg,
+                  bg=BG, fg=FG_MUT, relief="flat", cursor="hand2",
+                  font=("Segoe UI", 9), padx=8, pady=3).pack(side="left", padx=(0, 6))
+        tk.Button(frm, text="Configurer la base", command=self._on_setup_db,
+                  bg=BG, fg="#22d3ee", relief="flat", cursor="hand2",
+                  font=("Segoe UI", 9), padx=8, pady=3).pack(side="left")
+        self.pg_dot = tk.Label(frm, text="●", bg=SURFACE, fg=FG_MUT,
+                               font=("Segoe UI", 14))
+        self.pg_dot.pack(side="right", padx=(0, 10))
+        self.pg_lbl = tk.Label(frm, text="—", bg=SURFACE, fg=FG_MUT,
+                               font=("Segoe UI", 9))
+        self.pg_lbl.pack(side="right")
+
+    def _detect_pg_port(self):
+        import socket
+        for port in [5432, 5433, 5434, 5435]:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(0.3)
+                if s.connect_ex(("127.0.0.1", port)) == 0:
+                    s.close()
+                    return port
+                s.close()
+            except Exception:
+                pass
+        return None
+
+    def _update_env_port(self, port: int):
+        import re
+        appdata = Path(os.environ.get("APPDATA", Path.home())) / "HHGL"
+        env_path = appdata / ".env"
+        if env_path.exists():
+            content = env_path.read_text(encoding="utf-8")
+            content = re.sub(
+                r"(postgresql\+asyncpg://[^@]+@[^:/]+:)\d+(/\S*)",
+                rf"\g<1>{port}\2",
+                content,
+            )
+            env_path.write_text(content, encoding="utf-8")
+        current = os.environ.get("DATABASE_URL", "")
+        os.environ["DATABASE_URL"] = re.sub(
+            r"(postgresql\+asyncpg://[^@]+@[^:/]+:)\d+(/\S*)",
+            rf"\g<1>{port}\2",
+            current,
+        )
+
+    def _auto_detect_pg(self):
+        port = self._detect_pg_port()
+        if port:
+            self.pg_port_var.set(str(port))
+            self._update_env_port(port)
+            self.pg_dot.config(fg=SUCCESS)
+            self.pg_lbl.config(text=f"Port {port} détecté", fg=SUCCESS)
+            self._log(f"PostgreSQL détecté sur le port {port}.", "ok")
+        else:
+            self.pg_dot.config(fg=DANGER)
+            self.pg_lbl.config(text="Non trouvé", fg=DANGER)
+            self._log("PostgreSQL non détecté — installez-le ou démarrez le service.", "err")
+
+    def _on_detect_pg(self):
+        self.pg_dot.config(fg="#fbbf24")
+        self.pg_lbl.config(text="Détection…", fg="#fbbf24")
+        self.root.update()
+        self._auto_detect_pg()
+
+    def _on_setup_db(self):
+        import subprocess, re
+        port = self.pg_port_var.get() or "5432"
+        self._log(f"Configuration de la base sur le port {port}…", "warn")
+        psql = next(
+            (p for p in [
+                r"C:\Program Files\PostgreSQL\16\bin\psql.exe",
+                r"C:\Program Files\PostgreSQL\17\bin\psql.exe",
+                r"C:\Program Files\PostgreSQL\18\bin\psql.exe",
+                r"C:\Program Files\PostgreSQL\15\bin\psql.exe",
+            ] if Path(p).exists()),
+            None,
+        )
+        if not psql:
+            self._log("psql.exe introuvable — vérifiez l'installation PostgreSQL.", "err")
+            return
+        base = [psql, "-U", "postgres", "-h", "127.0.0.1", "-p", port]
+        env = {**os.environ, "PGPASSWORD": ""}
+        for sql, msg in [
+            ("CREATE USER hhgl WITH PASSWORD 'hhgl' CREATEDB;", "Utilisateur hhgl créé"),
+            ("CREATE DATABASE hhgl OWNER hhgl;", "Base hhgl créée"),
+            ("GRANT ALL PRIVILEGES ON DATABASE hhgl TO hhgl;", "Permissions accordées"),
+        ]:
+            try:
+                r = subprocess.run(base + ["-c", sql], capture_output=True,
+                                   text=True, timeout=10, env=env)
+                if r.returncode == 0:
+                    self._log(msg, "ok")
+                elif "already exists" in r.stderr.lower() or "existe déjà" in r.stderr.lower():
+                    self._log(f"(déjà existant) {msg}", "info")
+                else:
+                    self._log(f"Avertissement : {r.stderr.strip()}", "warn")
+            except Exception as e:
+                self._log(f"Erreur : {e}", "err")
+        self._log("Configuration terminée — relancez le serveur.", "ok")
 
     # ── Logs ──────────────────────────────────────────────────────────────────
 
