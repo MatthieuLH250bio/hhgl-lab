@@ -67,13 +67,19 @@ def _seed_admin():
     try:
         import asyncio
         from seed_admin import seed
+        from app.db.session import engine
+
+        async def _run():
+            await seed()
+            await engine.dispose()
+
         if sys.platform == "win32":
             loop = asyncio.SelectorEventLoop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(seed())
+            loop.run_until_complete(_run())
             loop.close()
         else:
-            asyncio.run(seed())
+            asyncio.run(_run())
     except Exception as e:
         print(f"[seed_admin] {e}")
 
